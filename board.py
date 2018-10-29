@@ -20,7 +20,7 @@ def callPultWD():
 #    print("callPultWD")
     sendPultCommand("wd", 0)
 
-# Класс, распаковывающий сообщение от борта
+# Класс, принимающий и распаковывающий сообщение от пульта
 class Receiver(threading.Thread):
     def __init__(self, sock):
         super(Receiver, self).__init__()
@@ -36,13 +36,13 @@ class Receiver(threading.Thread):
 #            print('%s Receiver: wait data...' % getDateTime())
 
             try:
-                dataRAW = self.sock.recvfrom(1024) # попытка получения сообщения
+                dataRAW = self.sock.recvfrom(1024) # ожидание получения сообщения
                 cmd, param = pickle.loads(dataRAW[0]) # распаковка полученного сообщения
                 addr = dataRAW[1]
 
 #                print("%s: cmd=%s, param=%s" % (getDateTime(),cmd, param))
                 
-                if (cmd=="wd"): # обработка "обнуляещего" сообщения от борта
+                if (cmd=="wd"): # Получение сообщения, обнуляещего счетчик WD на борте
                     boardReceiverWD.setCount()
 
             except Exception as err:
@@ -51,7 +51,7 @@ class Receiver(threading.Thread):
     def stop(self):
         self.stopped.set()
 
-# Класс - Watchdog
+# Класс - Watchdog борта
 class BoardReceiverWD(threading.Thread):
     def __init__(self):
         super(BoardReceiverWD, self).__init__()
@@ -63,14 +63,14 @@ class BoardReceiverWD(threading.Thread):
     def run(self):
         print('BoardReceiverWD started')
 
-        while not self.stopped.wait(self.interval): # Цикл, тикающий раз в сек
+        while not self.stopped.wait(self.interval): # Цикл, тикающий 1 раз в сек
 #            print('%s ReceiverWD: wait data...' % getDateTime())
 
             try:
-                callPultWD() # вызов функции, отправляющей борту "обнуляющего" сообщения
+                callPultWD() # вызов функции, обнуляющей счетчик WD на пульте
 
                 self.count = self.count + 1
-                if self.count > 3: # если юольше 3 секунд нет сигнала от борта
+                if self.count > 3: # если счетчик больше заданного порога
                     print('%s BoardReceiverWD: Error: No connection, Count: %d' % (getDateTime(), self.count))
 #                    Motors(0, 0)
                 else:
@@ -80,14 +80,14 @@ class BoardReceiverWD(threading.Thread):
             except Exception as err:
                 print("%s BoardReceiverWD: Error: %s" % (getDateTime(), err))
 
-    # Функция, обнуляющая счетчик, если появился сигнал от борта
+    # Функция, обнуляющая счетчик, если появился сигнал от пульта
     def setCount(self, param = 0):
 #        print('SetCount...')
 
-        if (param == 0 and self.count > 3):
+        if (param == 0 and self.count > 3): # если счетчик хотят обнулить и счетчик больше заданного порога, то сообщаем о восстановлении соединения с пультом
             print("BoardReceiverWD: Connection restored")
 
-        self.count = param # обнуление счетчика
+        self.count = param 
 
     def stop(self):
         self.stopped.set()
@@ -99,7 +99,7 @@ server.bind((IP_BOARD, PORT_BOARD))
 print("Board started: %s on port %d..." % (IP_BOARD, PORT_BOARD))
 server.settimeout(TIMEOUT)
 
-# создание экземпляров классов 
+# создание экземпляров классов и запуск соответствующих потоков
 receiver = Receiver(server)
 receiver.start()
 
