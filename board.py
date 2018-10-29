@@ -92,7 +92,7 @@ class BoardReceiverWD(threading.Thread):
     def stop(self):
         self.stopped.set()
 
-# создание сервера 
+# создание socket-сервера 
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server.bind((IP_BOARD, PORT_BOARD))
 
