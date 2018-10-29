@@ -11,4 +11,5 @@ PORT_PULT = 6001
 # Timeout
 TIMEOUT = 60
 
+# Скорость
 SPEED = 100
