@@ -6,10 +6,12 @@ import socket
 import pickle
 import time
 import datetime
-import pygame
+import joystick
+#import pygame
 
 from utils import *
 from config import *
+import joy
 
 # Функция, отправляющая пакет данных на борт.
 # Принимает на вход имя пакета данных и сам пакет
@@ -60,6 +62,7 @@ class PultReceiverWD(threading.Thread):
     def __init__(self):
         super(PultReceiverWD, self).__init__()
         self.daemon = True
+        
         self.interval = 1
         self.stopped = threading.Event()
         self.count = 0
@@ -107,39 +110,45 @@ pultReceiver.start()
 pultReceiverWD = PultReceiverWD()
 pultReceiverWD.start()
 
-screen = pygame.display.set_mode([640, 480])  # создаем окно программы
-clock = pygame.time.Clock()
-#pygame.joystick.init()
+j = joystick.Joystick()
+j.open("/dev/input/js0")
+j.info()
+j.start()
+
+joy1 = joy.Joyst(j, client)
+joy1.start()
+
+#screen = pygame.display.set_mode([640, 480])  # создаем окно программы
+#clock = pygame.time.Clock()
 
 running = True
 
 while running: # главный цикл программы
-    for event in pygame.event.get(): # цикл, пробегающийся по всем событиям pygame и обрабатывающий их
+    time.sleep(0.1)
+#    for event in pygame.event.get(): # цикл, пробегающийся по всем событиям pygame и обрабатывающий их
 #        print(event)
-        if event.type == pygame.QUIT: # условие выхода из цикла
-            running = False
-        elif event.type == pygame.KEYDOWN: # если нажата клавиша
-
-            print(event)
-
-            # обработка нажатия клавиш
-            if event.key == pygame.K_LEFT:
-                setBoardSpeed(SPEED, -SPEED)
-            elif event.key == pygame.K_RIGHT:
-                setBoardSpeed(-SPEED, SPEED)
-            elif event.key == pygame.K_UP:
-                setBoardSpeed(SPEED, SPEED)
-            elif event.key == pygame.K_DOWN:
-                setBoardSpeed(-SPEED, -SPEED)
-            elif event.key == pygame.K_SPACE:
-                beep()
-        elif event.type == pygame.KEYUP:
-            setBoardSpeed(0,0)
-        elif event.type == pygame.K_HOME: # условие выхода из цикла
-            setBoardSpeed(0, 0)
-            exit()
-            running = False
-            break
+#        if event.type == pygame.QUIT: # условие выхода из цикла
+#            running = False
+#        elif event.type == pygame.KEYDOWN: # если нажата клавиша
+#            print(event)
+#            # обработка нажатия клавиш
+#            if event.key == pygame.K_LEFT:
+#                setBoardSpeed(SPEED, -SPEED)
+#            elif event.key == pygame.K_RIGHT:
+#                setBoardSpeed(-SPEED, SPEED)
+#            elif event.key == pygame.K_UP:
+#                setBoardSpeed(SPEED, SPEED)
+#            elif event.key == pygame.K_DOWN:
+#                setBoardSpeed(-SPEED, -SPEED)
+#            elif event.key == pygame.K_SPACE:
+#                beep()
+#        elif event.type == pygame.KEYUP:
+#            setBoardSpeed(0,0)
+#        elif event.type == pygame.K_HOME: # условие выхода из цикла
+#            setBoardSpeed(0, 0)
+#            exit()
+#            running = False
+#            break
 
 # остановка всех потоков
 client.close()
