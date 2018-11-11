@@ -36,6 +36,8 @@ class Receiver(threading.Thread):
         while not self.stopped.wait(self.interval): # Цикл, тикающий 1 раз в 0.1 сек
 #            print('%s Receiver: wait data...' % getDateTime())
 
+            callPultWD() # вызов функции, обнуляющей счетчик WD на пульте
+
             try:
                 dataRAW = self.sock.recvfrom(1024) # ожидание получения сообщения
                 cmd, param = pickle.loads(dataRAW[0]) # распаковка полученного сообщения
@@ -80,7 +82,7 @@ class BoardReceiverWD(threading.Thread):
     def __init__(self):
         super(BoardReceiverWD, self).__init__()
         self.daemon = True
-        self.interval = 1
+        self.interval = WD_INTERVAL
         self.stopped = threading.Event()
         self.count = 0
 
@@ -91,10 +93,8 @@ class BoardReceiverWD(threading.Thread):
 #            print('%s ReceiverWD: wait data...' % getDateTime())
 
             try:
-                callPultWD() # вызов функции, обнуляющей счетчик WD на пульте
-
                 self.count = self.count + 1
-                if self.count > 3: # если счетчик больше заданного порога
+                if self.count > WD_COUNT: # если счетчик больше заданного порога
                     print('%s BoardReceiverWD: Error: No connection, Count: %d' % (getDateTime(), self.count))
                     Motors(0, 0)
                 else:
@@ -125,8 +125,8 @@ motorL = RPiPWM.ReverseMotor(chanRevMotorL)
 motorR = RPiPWM.ReverseMotor(chanRevMotorR)
 
 def Motors(leftSpeed, rightSpeed):
-    motorL.SetValue(leftSpeed)
-    motorR.SetValue(rightSpeed)
+    motorL.setValue(leftSpeed)
+    motorR.setValue(rightSpeed)
 
 curServo1 = 0
 curServo2 = 0
@@ -144,7 +144,7 @@ servo3_180 = RPiPWM.Servo180(chanServo3_180, extended=True)
 print("Servo channels: Servo180_1 - %d, Servo180_2 - %d, Servo180_3 - %d" % (chanServo1_180, chanServo2_180, chanServo3_180))
 
 def MotorServo3(directServo):
-    s3 = servo3_180.GetValue()
+    s3 = servo3_180.getValue()
 
     global curServo3
     curServo3 = s3
@@ -164,7 +164,7 @@ def MotorServo3(directServo):
     return 0
 
 def MotorServo2(directServo):
-    s2 = servo2_180.GetValue()
+    s2 = servo2_180.getValue()
 
     global curServo2
     curServo2 = s2
@@ -184,7 +184,7 @@ def MotorServo2(directServo):
     return 0
 
 def MotorServo1(directServo):
-    s1 = servo1_180.GetValue()
+    s1 = servo1_180.getValue()
 
     global curServo1
     curServo1 = s1
@@ -209,7 +209,7 @@ def LightsOnOff(turnOnOff):
     curLights = turnOnOff
 
     print("Lights: %d" % turnOnOff)
-    lights.SetValue(turnOnOff)
+    lights.setValue(turnOnOff)
 
     return 0
 
