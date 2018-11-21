@@ -6,10 +6,12 @@ import socket
 import pickle
 import time
 import datetime
-import pygame
+import joystick
+#import pygame
 
 from utils import *
 from config import *
+import joy
 
 # Функция, отправляющая пакет данных на борт.
 # Принимает на вход имя пакета данных и сам пакет
@@ -39,6 +41,8 @@ class PultReceiver(threading.Thread):
         while not self.stopped.wait(self.interval): # Цикл, тикающий раз в 0.1 сек
 #            print('%s Receiver: wait data...' % getDateTime())
 
+            callBoardWD() # вызов функции, обнуляющей счетчик WD на борте (раньше вызывали из симметричного PultReceiverWD)
+
             try:
                 dataRAW = self.sock.recvfrom(1024) # ожидание получения сообщения
                 cmd, param = pickle.loads(dataRAW[0]) #распаковка полученного сообщения
@@ -46,7 +50,8 @@ class PultReceiver(threading.Thread):
 
 #                print("%s: cmd=%s, param=%s" % (getDateTime(),cmd, param))
 
-                if (cmd=="wd"): # Получение сообщения, обнуляещего счетчик WD на пульте
+                if (cmd=="wd"): # Получение сообщения, обнуляющего счетчик WD на пульте
+                                # тут надо добавлять в проверку КАЖДУЮ валидную команду и обнулять WD
                     pultReceiverWD.setCount()
 
             except Exception as err:
@@ -60,7 +65,8 @@ class PultReceiverWD(threading.Thread):
     def __init__(self):
         super(PultReceiverWD, self).__init__()
         self.daemon = True
-        self.interval = 1
+        
+        self.interval = WD_INTERVAL
         self.stopped = threading.Event()
         self.count = 0
 
@@ -71,10 +77,8 @@ class PultReceiverWD(threading.Thread):
 #            print('%s PultReceiverWD: wait data...' % getDateTime())
 
             try:
-                callBoardWD() # вызов функции, обнуляющей счетчик WD на борте
-
                 self.count = self.count + 1
-                if self.count > 3: # если счетчик больше заданного порога
+                if self.count > WD_COUNT: # если счетчик больше заданного порога
                     print('%s PultReceiverWD: Error: No connection, Count: %d' % (getDateTime(), self.count))
 #                    Motors(0, 0)
                 else:
@@ -107,39 +111,19 @@ pultReceiver.start()
 pultReceiverWD = PultReceiverWD()
 pultReceiverWD.start()
 
-screen = pygame.display.set_mode([640, 480])  # создаем окно программы
-clock = pygame.time.Clock()
-#pygame.joystick.init()
+j = joystick.Joystick()
+j.open("/dev/input/js0")
+time.sleep(2)
+j.info()
+j.start()
+
+joy1 = joy.Joyst(j, client)
+joy1.start()
 
 running = True
 
 while running: # главный цикл программы
-    for event in pygame.event.get(): # цикл, пробегающийся по всем событиям pygame и обрабатывающий их
-#        print(event)
-        if event.type == pygame.QUIT: # условие выхода из цикла
-            running = False
-        elif event.type == pygame.KEYDOWN: # если нажата клавиша
-
-            print(event)
-
-            # обработка нажатия клавиш
-            if event.key == pygame.K_LEFT:
-                setBoardSpeed(SPEED, -SPEED)
-            elif event.key == pygame.K_RIGHT:
-                setBoardSpeed(-SPEED, SPEED)
-            elif event.key == pygame.K_UP:
-                setBoardSpeed(SPEED, SPEED)
-            elif event.key == pygame.K_DOWN:
-                setBoardSpeed(-SPEED, -SPEED)
-            elif event.key == pygame.K_SPACE:
-                beep()
-        elif event.type == pygame.KEYUP:
-            setBoardSpeed(0,0)
-        elif event.type == pygame.K_HOME: # условие выхода из цикла
-            setBoardSpeed(0, 0)
-            exit()
-            running = False
-            break
+    time.sleep(0.1)
 
 # остановка всех потоков
 client.close()
