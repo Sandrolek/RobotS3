@@ -19,3 +19,9 @@ SPEED = 100
 # WhatchDog
 WD_INTERVAL = 1
 WD_COUNT = 2
+
+# Servo
+STEP_1 = 50
+STEP_2 = 50
+STEP_3 = 50
+

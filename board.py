@@ -56,10 +56,10 @@ class BoardReceiver(threading.Thread):
                     MotorServo1(-1)
                 elif (cmd=="s2_up"):
                     print("s2_up")
-                    MotorServo2(1)
+                    MotorServo2(-1)
                 elif (cmd=="s2_down"):
                     print("s2_down")
-                    MotorServo2(-1)
+                    MotorServo2(1)
                 elif (cmd=="s3_up"):
                     print("s3_up")
                     MotorServo3(1)
@@ -163,6 +163,26 @@ class BoardCountWD(threading.Thread):
     def stop(self):
         self.stopped.set()
 
+curServo1 = 0
+curServo2 = 0
+curServo3 = 0
+curLights = 0
+
+chanServo1_180 = 9
+chanServo2_180 = 10
+chanServo3_180 = 11
+
+# !!!!!!!! на первой серве задаем частоту ШИМ канала для ВСЕХ ШИМ девайсов
+servo1_180 = RPiPWM.Servo180(chanServo1_180, extended=True, freq=RPiPWM.PwmFreq.H125)
+servo2_180 = RPiPWM.Servo180(chanServo2_180, extended=True)
+servo3_180 = RPiPWM.Servo180(chanServo3_180, extended=True)
+
+print("Servo channels: Servo180_1 - %d, Servo180_2 - %d, Servo180_3 - %d" % (chanServo1_180, chanServo2_180, chanServo3_180))
+
+servo1_180.setMcs(1500)
+servo2_180.setMcs(1500)
+servo3_180.setMcs(1500)
+
 # Порты моторов
 chanRevMotorL = 12
 chanRevMotorR = 13
@@ -175,21 +195,6 @@ def Motors(leftSpeed, rightSpeed):
     motorL.setValue(leftSpeed)
     motorR.setValue(rightSpeed)
 
-curServo1 = 0
-curServo2 = 0
-curServo3 = 0
-curLights = 0
-
-chanServo1_180 = 9
-chanServo2_180 = 10
-chanServo3_180 = 11
-
-servo1_180 = RPiPWM.Servo180(chanServo1_180, extended=True)
-servo2_180 = RPiPWM.Servo180(chanServo2_180, extended=True)
-servo3_180 = RPiPWM.Servo180(chanServo3_180, extended=True)
-
-print("Servo channels: Servo180_1 - %d, Servo180_2 - %d, Servo180_3 - %d" % (chanServo1_180, chanServo2_180, chanServo3_180))
-
 def MotorServo3(directServo):
     s3 = servo3_180.getValue()
 
@@ -197,16 +202,16 @@ def MotorServo3(directServo):
     curServo3 = s3
 
     if directServo == 1:
-        s3 = s3 + 50
+        s3 = s3 + STEP_3
         if s3 > 2250:
             s3 = 2250
     else:
         if directServo == -1:
-            s3 = s3 - 50
+            s3 = s3 - STEP_3
             if s3 < 900:
                 s3 = 900
 #    print('valueServo3: %s' % (s3))
-    servo3_180.SetMcs(s3)
+    servo3_180.setMcs(s3)
 
     return 0
 
@@ -217,16 +222,16 @@ def MotorServo2(directServo):
     curServo2 = s2
 
     if directServo == 1:
-        s2 = s2 + 50
+        s2 = s2 + STEP_2
         if s2 > 2500:
             s2 = 2500
     else:
         if directServo == -1:
-            s2 = s2 - 50
+            s2 = s2 - STEP_2
             if s2 < 900:
                 s2 = 900
 #    print('valueServo2: %s' % (s2))
-    servo2_180.SetMcs(s2)
+    servo2_180.setMcs(s2)
 
     return 0
 
@@ -237,17 +242,17 @@ def MotorServo1(directServo):
     curServo1 = s1
 
     if directServo == 1:
-        s1 = s1 + 50
+        s1 = s1 + STEP_1
         if s1 > 2100:
             s1 = 2100
     else:
         if directServo == -1:
-            s1 = s1 - 50
+            s1 = s1 - STEP_1
             if s1 < 900:
                 s1 = 900
 
 #    print('valueServo1: %d' % (s1))
-    servo1_180.SetMcs(s1)
+    servo1_180.setMcs(s1)
 
     return 0
 
