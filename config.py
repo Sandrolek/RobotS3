@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # Сокеты =================
-IP_BOARD = '192.168.1.180'
-PORT_BOARD = 6000
-IP_PULT = '192.168.1.180'
-PORT_PULT = 6001
+IP_BOARD        = '192.168.1.105'
+PORT_BOARD      = 6000
+PORT_BOARD_WD   = 6001
+
+IP_PULT         = '192.168.1.113'
+PORT_PULT       = 6010
+PORT_PULT_WD    = 6011
 
 # Timeout
 TIMEOUT = 60
@@ -15,4 +18,4 @@ SPEED = 100
 
 # WhatchDog
 WD_INTERVAL = 1
-WD_COUNT = 1
+WD_COUNT = 2
