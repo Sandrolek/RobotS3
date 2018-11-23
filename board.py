@@ -11,6 +11,7 @@ import RPiPWM
 from utils import *
 from config import *
 
+
 # Функция, отправляющая пакет данных на пульт
 # Принимает на вход название пакета и его самого 
 def sendPultCommand(cmd, param):
