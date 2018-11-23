@@ -26,6 +26,15 @@ class Joyst(threading.Thread):
         self.SPEED = 100
         self.speedChange = False
 
+        #Серво приводы
+        self.modeServo1 = 0
+        self.modeServo2 = 0
+        self.modeServo3 = 0
+
+        self.servo1Change = False
+        self.servo2Change = False
+        self.servo3Change = False
+
         #инициализируем переменные значения кнопок и их названия (и то же самое для стиков) 
         self.hatX = 0.0
         self.hatY = 0.0
@@ -110,26 +119,8 @@ class Joyst(threading.Thread):
                 self.speedCur = self.SPEED_0
             print('speedCur = %d' % self.speedCur)
 
-#        if self.bTl == 0 and self.bTlOld == 1:
-#            self.bTlOld = 0
-
-#            self.count_bTl = self.count_bTl + 1
-#            if self.count_bTl > 2:
-#                self.count_bTl = 0
-
-#            if self.count_bTl == 0:
-#                self.speedCur = self.SPEED_0
-#            elif self.count_bTl == 1:
-#                self.speedCur = self.SPEED_1
-#            elif self.count_bTl == 2:
-#                self.speedCur = self.SPEED_2
-#            print('speedCur = %d' % self.speedCur)
-#        elif self.bTl == 1 and self.bTlOld == 0:
-#            self.bTlOld = 1
-
     def onBtnTr(self, value):
 #        print("btnTr=%s" % value)
-
         if value == 1:
             self.bTr = 1
         elif value == 0:
@@ -139,82 +130,54 @@ class Joyst(threading.Thread):
 
     def onBtnY(self, value):
 #        print("btnY=%s" % value)
-
-#        self.bY = value  # Серва 1 или 2: вверх
-#        if self.bY != self.bYOld or self.bY == 1:
-#            if self.bY == 1:
-#                self.servoYChange = True
-            #            print('btnY = %d' % (bY))
-#            self.bYOld = self.bY
-        if value == 1:
-            self.servoYChange = True
-            self.bY = 1
-        elif value == 0:
-            self.servoYChange = False
-            self.bY = 0
-        else:
-            self.servoYChange = False
-            self.bY = 0
+        if self.bTr == 1:
+            if value == 1:
+                self.servo2Change = True
+                self.modeServo2 = -1
+            elif value == 0:
+                self.servo2Change = True
+                self.modeServo2 = 0
+        elif self.bTr == 0:
+            if value == 1:
+                self.servo1Change = True
+                self.modeServo1 = 1
+            elif value == 0:
+                self.servo1Change = True
+                self.modeServo1 = 0
 
     def onBtnA(self, value):
 #        print("btnA=%s" % value)
-#        self.bA = value # Серва 1 или 2: вниз
-#        if self.bA != self.bAOld or self.bA == 1:
-#            if self.bA == 1:
-#                self.servoAChange = True
-#            print('btnA = %d' % (bA))
-#            self.bAOld = self.bA
-        if value == 1:
-            self.servoAChange = True
-            self.bA = 1
-        elif value == 0:
-            self.servoAChange = False
-            self.bA = 0
-        else:
-            self.servoAChange = False
-            self.bA = 0
-
+        if self.bTr == 1:
+            self.servo2Change = True
+            if value == 1:
+                self.modeServo2 = 1
+            elif value == 0:
+                self.modeServo2 = 0
+        elif self.bTr == 0:
+            self.servo1Change = True
+            if value == 1:
+                self.modeServo1 = -1
+            elif value == 0:
+                self.modeServo1 = 0
 
     def onBtnX(self, value):
 #        print("btnX=%s" % value)
-
-#        self.bX = value  # Серва 3:
-#        if self.bX != self.bXOld or self.bX == 1:
-#            if self.bX == 1:
-#                self.servoXChange = True
-            #            print('btnX = %d' % (bX))
-#            self.bXOld = self.bX
+        self.servo3Change = True
         if value == 1:
-            self.servoXChange = True
-            self.bX = 1
+            self.modeServo3 = 1
         elif value == 0:
-            self.servoXChange = False
-            self.bX = 0
-        else:
-            self.servoXChange = False
-            self.bX = 0
+            self.modeServo3 = 0
 
     def onBtnB(self, value):
 #        print("btnB=%s" % value)
-
-#        self.bB = value  # Серва 3:
-#        if self.bB != self.bBOld or self.bB == 1:
-#            if self.bB == 1:
-#                self.servoBChange = True
-            #            print('btnB = %d' % (bB))
-#            self.bBOld = self.bB
+        self.servo3Change = True
         if value == 1:
-            self.servoBChange = True
-            self.bB = 1
+            self.modeServo3 = -1
         elif value == 0:
-            self.servoBChange = False
-            self.bB = 0
-        else:
-            self.servoBChange = False
-            self.bB = 0
+            self.modeServo3 = 0
 
     def sendBoardCommand(self, cmd, param):
-        print("%s cmd=%s, param=%s" % (getDateTime(),cmd, param))
+#        print("%s cmd=%s, param=%s" % (getDateTime(),cmd, param))
 
         sendCommand(self.client, cmd, param, (IP_BOARD, PORT_BOARD))
     
@@ -265,28 +228,17 @@ class Joyst(threading.Thread):
 #                    print('leftM=%d, rightM=%d' % (self.leftSpeed, self.rightSpeed))
                     self.sendBoardCommand('speed', (self.leftSpeed, self.rightSpeed))
 
-                if self.servoYChange:
-#                    self.servoYChange = False
-                    if self.bTr == 1:
-                        self.sendBoardCommand('s2_up', 0) # Поднимаем 2-у серву, т.к. прижат курок
-                    else:
-                        self.sendBoardCommand('s1_up', 0) # Поднимаем 1-ю серву
+                if self.servo1Change:
+                    self.sendBoardCommand('modeServo1', self.modeServo1)
+                    self.servo1Change = False
 
-                if self.servoAChange:
-#                    self.servoAChange = False
-                    if self.bTr == 1:
-#                        print('S2 DOWN')
-                        self.sendBoardCommand('s2_down', 0) # Опускаем 2-у серву, т.к. прижат курок
-                    else:
-                        self.sendBoardCommand('s1_down', 0) # Опускаем 1-ю серву
+                if self.servo2Change:
+                    self.sendBoardCommand('modeServo2', self.modeServo2)
+                    self.servo2Change = False
 
-                if self.servoXChange:
-#                    self.servoXChange = False
-                    self.sendBoardCommand('s3_up', 0) # Серва 3
-
-                if self.servoBChange:
-#                    self.servoBChange = False
-                    self.sendBoardCommand('s3_down', 0) # Серва 3
+                if self.servo3Change:
+                    self.sendBoardCommand('modeServo3', self.modeServo3)
+                    self.servo3Change = False
 
             except (Exception) as err:
                 print("%s Error: %s" % (getDateTime(), err))

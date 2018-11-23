@@ -32,6 +32,8 @@ class BoardReceiver(threading.Thread):
     def run(self):
         print('BoardReceiver started')
 
+        global modeServo1, modeServo2, modeServo3
+
         while not self.stopped.wait(self.interval): # Цикл, тикающий 1 раз в 0.1 сек
 #            print('%s Receiver: wait data...' % getDateTime())
 
@@ -39,33 +41,25 @@ class BoardReceiver(threading.Thread):
                 dataRAW = self.socket_server.recvfrom(1024) # ожидание получения сообщения
                 cmd, param = pickle.loads(dataRAW[0]) # распаковка полученного сообщения
 
-#                print("%s Receiver: cmd=%s, param=%s" % (getDateTime(),cmd, param))
-                
                 if (cmd=="wd"): # Получение сообщения, обнуляещего счетчик WD на борте
                     boardReceiverWD.setCount()
+                elif (cmd=="cmd_motors"):
+#                    print("%s BoardReceiver: leftSpeed = %s, rightSpeed = %s, bY = %s, bA = %s, bX = %s, bB = %s" % (getDateTime(), param[0], param[1], param[2], param[3], param[4], param[5]))
+                    pass
                 elif (cmd=="speed"):
                     lS = param[0]
                     rS = param[1]
-                    print("%s BoardReceiver: leftSpeed = %s rightSpeed = %s" % (getDateTime(), lS, rS))
+#                    print("%s BoardReceiver: leftSpeed = %s rightSpeed = %s" % (getDateTime(), lS, rS))
                     Motors(lS, rS)
-                elif (cmd=="s1_up"):
-                    print("s1_up")
-                    MotorServo1(1)
-                elif (cmd=="s1_down"):
-                    print("s1_down")
-                    MotorServo1(-1)
-                elif (cmd=="s2_up"):
-                    print("s2_up")
-                    MotorServo2(-1)
-                elif (cmd=="s2_down"):
-                    print("s2_down")
-                    MotorServo2(1)
-                elif (cmd=="s3_up"):
-                    print("s3_up")
-                    MotorServo3(1)
-                elif (cmd=="s3_down"):
-                    print("s3_down")
-                    MotorServo3(-1)
+                elif (cmd == "modeServo1"):
+#                    print("%s Receiver: Servo1: cmd=%s, param=%s" % (getDateTime(),cmd, param))
+                    modeServo1 = param
+                elif (cmd == "modeServo2"):
+                    modeServo2 = param
+                elif (cmd == "modeServo3"):
+                    modeServo3 = param
+                else:
+                    pass
 
             except Exception as err:
                 print("%s BoardReceiver: Error: %s" % (getDateTime(), err))
@@ -163,6 +157,11 @@ class BoardCountWD(threading.Thread):
     def stop(self):
         self.stopped.set()
 
+
+modeServo1 = 0
+modeServo2 = 0
+modeServo3 = 0
+
 curServo1 = 0
 curServo2 = 0
 curServo3 = 0
@@ -256,6 +255,67 @@ def MotorServo1(directServo):
 
     return 0
 
+class MotorsServo(threading.Thread):
+    def __init__(self):
+        super(MotorsServo, self).__init__()
+        self.daemon = True
+        self.interval = SERVO_INTERVAL
+        self.stopped = threading.Event()
+
+    def run(self):
+        print('MotorsServo started')
+
+        while not self.stopped.wait(self.interval):
+            try:
+                global curServo1, curServo2, curServo3, modeServo1, modeServo2, modeServo3
+
+                curServo1 = servo1_180.getValue()
+                curServo2 = servo2_180.getValue()
+                curServo3 = servo3_180.getValue()
+
+                if (modeServo1 != 0 or modeServo2 !=0 or modeServo3 !=0):
+                    print('Servo1 %d/%d, Servo2: %d/%d, Servo3: %d/%d' % (curServo1, modeServo1, curServo2, modeServo2, curServo3, modeServo3))
+
+                if modeServo1 == 1:
+                    curServo1 = curServo1 + STEP_1
+                    if curServo1 > 2100:
+                        curServo1 = 2100
+                    servo1_180.setMcs(curServo1)
+                elif modeServo1 == -1:
+                    curServo1 = curServo1 - STEP_1
+                    if curServo1 < 900:
+                        curServo1 = 900
+                    servo1_180.setMcs(curServo1)
+
+                if modeServo2 == 1:
+                    curServo2 = curServo2 + STEP_2
+                    if curServo2 > 2500:
+                        curServo2 = 2500
+                    servo2_180.setMcs(curServo2)
+                elif modeServo2 == -1:
+                    curServo2 = curServo2 - STEP_2
+                    if curServo2 < 900:
+                        curServo2 = 900
+                    servo2_180.setMcs(curServo2)
+
+                if modeServo3 == 1:
+                    curServo3 = curServo3 + STEP_3
+                    if curServo3 > 2250:
+                        curServo3 = 2250
+                    servo3_180.setMcs(curServo3)
+                elif modeServo3 == -1:
+                    curServo3 = curServo3 - STEP_3
+                    if curServo3 < 900:
+                        curServo3 = 900
+                    servo3_180.setMcs(curServo3)
+
+
+            except Exception as err:
+                print("%s MotorsServo: Error: %s" % (getDateTime(), err))
+
+    def stop(self):
+        self.stopped.set()
+
 def LightsOnOff(turnOnOff):
     global curLights
     curLights = turnOnOff
@@ -290,6 +350,9 @@ boardSenderWD.start()
 boardCountWD = BoardCountWD()
 boardCountWD.start()
 
+motorsServo = MotorsServo()
+motorsServo.start()
+
 running = True
 
 while running: # главный цикл
@@ -299,4 +362,5 @@ while running: # главный цикл
 socket_server.close()
 receiver.stop()
 boardReceiverWD.stop()
+motorsServo.stop()
 Motors(0,0)
