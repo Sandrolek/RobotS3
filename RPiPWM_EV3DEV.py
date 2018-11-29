@@ -3,6 +3,9 @@ from enum import IntEnum   # для создания нумерованных с
 import math
 import threading
 
+import evdev
+import ev3dev.auto as ev3
+
 class _PwmMode(IntEnum):    # список режимов работы
     servo90 = 90            # серва 90 градусов
     servo120 = 120          # серва 120 градусов
@@ -49,19 +52,25 @@ class Servo120(PwmBase):
 
 class Servo180(PwmBase):
     def __init__(self, channel, freq=PwmFreq.H50, extended=False):
-    pass
+        pass
 
 class Servo270(PwmBase):
     """Класс для управления сервой 270 град"""
     def __init__(self, channel, freq=PwmFreq.H50, extended=False):
         pass
 
-class ForwardMotor(PwmBase):
-    """Класс для управления мотором с одним направлением"""
-    def __init__(self, channel, freq=PwmFreq.H50, extended=False):
-        pass
-
 class ReverseMotor(PwmBase):
     """Класс для управления мотором с реверсом"""
     def __init__(self, channel, freq=PwmFreq.H50, extended=False):
-        pass
+        print("Channel=%d" % channel)
+
+        if channel == 12:
+            self.motor = ev3.LargeMotor(ev3.OUTPUT_B)
+        elif channel == 13:
+            self.motor = ev3.LargeMotor(ev3.OUTPUT_A)
+        else:
+            pass
+
+    def setValue(self, value: int):  # устанавливаем значение
+        speed = value * -1
+        self.motor.run_direct(duty_cycle_sp=speed)

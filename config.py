@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 # Сокеты =================
-IP_BOARD        = '192.168.1.105'
+IP_BOARD        = '192.168.1.131'
 PORT_BOARD      = 6000
 PORT_BOARD_WD   = 6001
 
-IP_PULT         = '192.168.1.113'
+IP_PULT         = '192.168.1.105'
 PORT_PULT       = 6010
 PORT_PULT_WD    = 6011
 

@@ -6,7 +6,7 @@ import socket
 import pickle
 import time
 import datetime
-import RPiPWM
+import RPiPWM_EV3DEV as RPiPWM
 
 from utils import *
 from config import *
@@ -50,7 +50,7 @@ class BoardReceiver(threading.Thread):
                 elif (cmd=="speed"):
                     lS = param[0]
                     rS = param[1]
-#                    print("%s BoardReceiver: leftSpeed = %s rightSpeed = %s" % (getDateTime(), lS, rS))
+                    print("%s BoardReceiver: leftSpeed = %s rightSpeed = %s" % (getDateTime(), lS, rS))
                     Motors(lS, rS)
                 elif (cmd == "modeServo1"):
 #                    print("%s Receiver: Servo1: cmd=%s, param=%s" % (getDateTime(),cmd, param))

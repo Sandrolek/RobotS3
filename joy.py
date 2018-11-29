@@ -184,7 +184,7 @@ class Joyst(threading.Thread):
     def run(self):
         print('Joystick started')
 
-        self.j.onButtonClick("thumbl", self.onBtnThumbl)
+#        self.j.onButtonClick("thumbl", self.onBtnTh    umbl)
         self.j.onButtonClick("tl", self.onBtnTl)
         self.j.onButtonClick("tr", self.onBtnTr)
         self.j.onButtonClick("y", self.onBtnY)
