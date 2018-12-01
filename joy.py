@@ -23,7 +23,7 @@ class Joyst(threading.Thread):
         self.rightSpeed = 0
         self.lastRightSp = 0
         self.lastLeftSp = 0
-        self.SPEED = 100
+#        self.SPEED = 100
         self.speedChange = False
 
         #Серво приводы
@@ -61,10 +61,6 @@ class Joyst(threading.Thread):
 
         self.hatXOld = 0.0
         self.hatYOld = 0.0
-        self.BASE_SPEED = 100
-        self.SPEED_0 = 30
-        self.SPEED_1 = 50
-        self.SPEED_2 = 100
         self.speedChange = False
 
         self.bA=0
@@ -92,7 +88,7 @@ class Joyst(threading.Thread):
         self.lightsChange = False
         self.lightsValue = False
 
-        self.speedCur = self.SPEED_1
+        self.speedCur = SPEED_1
 
     def onBtnThumbl(self, value):
         print("btnThumbl=%s" % value)
@@ -111,12 +107,12 @@ class Joyst(threading.Thread):
 #        print("btnTl=%s" % value)
 
         if value == 1:
-            if self.speedCur == self.SPEED_0:
-                self.speedCur = self.SPEED_1
-            elif self.speedCur == self.SPEED_1:
-                self.speedCur = self.SPEED_2
-            elif self.speedCur == self.SPEED_2:
-                self.speedCur = self.SPEED_0
+            if self.speedCur == SPEED_0:
+                self.speedCur = SPEED_1
+            elif self.speedCur == SPEED_1:
+                self.speedCur = SPEED_2
+            elif self.speedCur == SPEED_2:
+                self.speedCur = SPEED_0
             print('speedCur = %d' % self.speedCur)
 
     def onBtnTr(self, value):
@@ -198,7 +194,6 @@ class Joyst(threading.Thread):
                 self.hatY = self.j.axis.get(self.direct)
 
                 if self.hatX != self.hatXOld:
-        #            print((hatX, hatXOld))
                     if self.hatX != 0:
                         self.leftSpeed = round(self.hatX * self.speedCur)
                         self.rightSpeed = round(-self.hatX * self.speedCur)
@@ -222,6 +217,9 @@ class Joyst(threading.Thread):
                     self.lightsChange = False
 #                        print(self.lightsValue)
 #                        s.LightsOnOff(lightsValue)
+
+                if (self.speedChange or self.servo1Change or self.servo2Change or self.servo3Change):
+                    print('speed = %d/%d, Servo1 %d, Servo2: %d, Servo3: %d' % (self.leftSpeed, self.rightSpeed, self.modeServo1, self.modeServo2, self.modeServo3))
 
                 if self.speedChange:
                     self.speedChange = False
@@ -252,3 +250,8 @@ class Joyst(threading.Thread):
 
     def stop(self):
         self.stopped.set()
+
+
+'''             
+'''
+

@@ -158,34 +158,34 @@ class BoardCountWD(threading.Thread):
     def stop(self):
         self.stopped.set()
 
+class Devices():
+    def __init__(self):
+        super(Devices, self).__init__()
+        self.daemon = True
+        self.interval = WD_INTERVAL
+        self.stopped = threading.Event()
+        self.count = 0
 
 modeServo1 = 0
 modeServo2 = 0
 modeServo3 = 0
 
-curServo1 = 0
-curServo2 = 0
-curServo3 = 0
 curLights = 0
 
-chanServo1_180 = 9
-chanServo2_180 = 10
-chanServo3_180 = 11
-
 # !!!!!!!! на первой серве задаем частоту ШИМ канала для ВСЕХ ШИМ девайсов
-servo1_180 = RPiPWM.Servo180(chanServo1_180, extended=True, freq=RPiPWM.PwmFreq.H125)
-servo2_180 = RPiPWM.Servo180(chanServo2_180, extended=True)
-servo3_180 = RPiPWM.Servo180(chanServo3_180, extended=True)
+servo1_180 = RPiPWM.Servo180(CH_SERVO1, extended=True, freq=RPiPWM.PwmFreq.H125)
+servo2_180 = RPiPWM.Servo180(CH_SERVO2, extended=True)
+servo3_180 = RPiPWM.Servo180(CH_SERVO3, extended=True)
 
-print("Servo channels: Servo180_1 - %d, Servo180_2 - %d, Servo180_3 - %d" % (chanServo1_180, chanServo2_180, chanServo3_180))
+print("Servo channels: Servo180_1 - %d, Servo180_2 - %d, Servo180_3 - %d" % (CH_SERVO1, CH_SERVO2, CH_SERVO3))
 
-servo1_180.setMcs(1500)
-servo2_180.setMcs(1500)
-servo3_180.setMcs(1500)
+servo1_180.setMcs(SERVO_1_START)
+servo2_180.setMcs(SERVO_2_START)
+servo3_180.setMcs(SERVO_3_START)
 
 # Порты моторов
-chanRevMotorL = 12
-chanRevMotorR = 13
+chanRevMotorL = CH_LEFT
+chanRevMotorR = CH_RIGHT
 
 # создаем объекты моторов
 motorL = RPiPWM.ReverseMotor(chanRevMotorL)
@@ -195,6 +195,130 @@ def Motors(leftSpeed, rightSpeed):
     motorL.setValue(leftSpeed)
     motorR.setValue(rightSpeed)
 
+class MotorsServo(threading.Thread):
+    def __init__(self):
+        super(MotorsServo, self).__init__()
+        self.daemon = True
+        self.interval = SERVO_INTERVAL
+        self.stopped = threading.Event()
+
+    def run(self):
+        print('MotorsServo started')
+
+        curServo1 = 0
+        curServo2 = 0
+        curServo3 = 0
+
+        while not self.stopped.wait(self.interval):
+            try:
+                global modeServo1, modeServo2, modeServo3
+
+                curServo1 = servo1_180.getValue()
+                curServo2 = servo2_180.getValue()
+                curServo3 = servo3_180.getValue()
+
+                if (modeServo1 != 0 or modeServo2 !=0 or modeServo3 !=0):
+                    print('Servo1 %d/%d, Servo2: %d/%d, Servo3: %d/%d' % (curServo1, modeServo1, curServo2, modeServo2, curServo3, modeServo3))
+
+                if modeServo1 == 1:
+                    curServo1 = curServo1 + STEP_1
+                    if curServo1 > SERVO_1_MAX:
+                        curServo1 = SERVO_1_MAX
+                    servo1_180.setMcs(curServo1)
+                elif modeServo1 == -1:
+                    curServo1 = curServo1 - STEP_1
+                    if curServo1 < SERVO_1_MIN:
+                        curServo1 = SERVO_1_MIN
+                    servo1_180.setMcs(curServo1)
+
+                if modeServo2 == 1:
+                    curServo2 = curServo2 + STEP_2
+                    if curServo2 > SERVO_2_MAX:
+                        curServo2 = SERVO_2_MAX
+                    servo2_180.setMcs(curServo2)
+                elif modeServo2 == -1:
+                    curServo2 = curServo2 - STEP_2
+                    if curServo2 < SERVO_2_MIN:
+                        curServo2 = SERVO_2_MIN
+                    servo2_180.setMcs(curServo2)
+
+                if modeServo3 == 1:
+                    curServo3 = curServo3 + STEP_3
+                    if curServo3 > SERVO_3_MAX:
+                        curServo3 = SERVO_3_MAX
+                    servo3_180.setMcs(curServo3)
+                elif modeServo3 == -1:
+                    curServo3 = curServo3 - STEP_3
+                    if curServo3 < SERVO_3_MIN:
+                        curServo3 = SERVO_3_MIN
+                    servo3_180.setMcs(curServo3)
+
+            except Exception as err:
+                print("%s MotorsServo: Error: %s" % (getDateTime(), err))
+
+    def stop(self):
+        self.stopped.set()
+
+def LightsOnOff(turnOnOff):
+    global curLights
+    curLights = turnOnOff
+
+    print("Lights: %d" % turnOnOff)
+    lights.setValue(turnOnOff)
+
+    return 0
+
+# создание socket-сервера 
+socket_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+socket_server.bind((IP_BOARD, PORT_BOARD))
+socket_server.settimeout(TIMEOUT)
+print("Board started: %s on port %d..." % (IP_BOARD, PORT_BOARD))
+
+# создание socket-сервера
+socket_server_wd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+socket_server_wd.bind((IP_BOARD, PORT_BOARD_WD))
+socket_server_wd.settimeout(TIMEOUT)
+print("Board WD started: %s on port %d..." % (IP_BOARD, PORT_BOARD_WD))
+
+# создание экземпляров классов и запуск соответствующих потоков
+boardReceiver = BoardReceiver(socket_server)
+boardReceiver.start()
+
+boardReceiverWD = BoardReceiverWD(socket_server_wd)
+boardReceiverWD.start()
+
+boardSenderWD = BoardSenderWD()
+boardSenderWD.start()
+
+boardCountWD = BoardCountWD()
+boardCountWD.start()
+
+motorsServo = MotorsServo()
+motorsServo.start()
+
+_stopping = False
+
+while not _stopping:
+    try:
+        time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        print("Ctrl+C pressed")
+        _stopping = True
+
+Motors(0,0)
+
+# остановка всех потоков и сервера
+socket_server.close()
+socket_server_wd.close()
+
+boardReceiver.stop()
+boardReceiverWD.stop()
+boardSenderWD.stop()
+boardCountWD.stop()
+motorsServo.stop()
+
+'''
 def MotorServo3(directServo):
     s3 = servo3_180.getValue()
 
@@ -251,117 +375,7 @@ def MotorServo1(directServo):
             if s1 < 900:
                 s1 = 900
 
-#    print('valueServo1: %d' % (s1))
     servo1_180.setMcs(s1)
 
     return 0
-
-class MotorsServo(threading.Thread):
-    def __init__(self):
-        super(MotorsServo, self).__init__()
-        self.daemon = True
-        self.interval = SERVO_INTERVAL
-        self.stopped = threading.Event()
-
-    def run(self):
-        print('MotorsServo started')
-
-        while not self.stopped.wait(self.interval):
-            try:
-                global curServo1, curServo2, curServo3, modeServo1, modeServo2, modeServo3
-
-                curServo1 = servo1_180.getValue()
-                curServo2 = servo2_180.getValue()
-                curServo3 = servo3_180.getValue()
-
-                if (modeServo1 != 0 or modeServo2 !=0 or modeServo3 !=0):
-                    print('Servo1 %d/%d, Servo2: %d/%d, Servo3: %d/%d' % (curServo1, modeServo1, curServo2, modeServo2, curServo3, modeServo3))
-
-                if modeServo1 == 1:
-                    curServo1 = curServo1 + STEP_1
-                    if curServo1 > 2100:
-                        curServo1 = 2100
-                    servo1_180.setMcs(curServo1)
-                elif modeServo1 == -1:
-                    curServo1 = curServo1 - STEP_1
-                    if curServo1 < 900:
-                        curServo1 = 900
-                    servo1_180.setMcs(curServo1)
-
-                if modeServo2 == 1:
-                    curServo2 = curServo2 + STEP_2
-                    if curServo2 > 2500:
-                        curServo2 = 2500
-                    servo2_180.setMcs(curServo2)
-                elif modeServo2 == -1:
-                    curServo2 = curServo2 - STEP_2
-                    if curServo2 < 900:
-                        curServo2 = 900
-                    servo2_180.setMcs(curServo2)
-
-                if modeServo3 == 1:
-                    curServo3 = curServo3 + STEP_3
-                    if curServo3 > 2250:
-                        curServo3 = 2250
-                    servo3_180.setMcs(curServo3)
-                elif modeServo3 == -1:
-                    curServo3 = curServo3 - STEP_3
-                    if curServo3 < 900:
-                        curServo3 = 900
-                    servo3_180.setMcs(curServo3)
-
-
-            except Exception as err:
-                print("%s MotorsServo: Error: %s" % (getDateTime(), err))
-
-    def stop(self):
-        self.stopped.set()
-
-def LightsOnOff(turnOnOff):
-    global curLights
-    curLights = turnOnOff
-
-    print("Lights: %d" % turnOnOff)
-    lights.setValue(turnOnOff)
-
-    return 0
-
-# создание socket-сервера 
-socket_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-socket_server.bind((IP_BOARD, PORT_BOARD))
-socket_server.settimeout(TIMEOUT)
-print("Board started: %s on port %d..." % (IP_BOARD, PORT_BOARD))
-
-# создание socket-сервера
-socket_server_wd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-socket_server_wd.bind((IP_BOARD, PORT_BOARD_WD))
-socket_server_wd.settimeout(TIMEOUT)
-print("Board WD started: %s on port %d..." % (IP_BOARD, PORT_BOARD_WD))
-
-# создание экземпляров классов и запуск соответствующих потоков
-boardReceiver = BoardReceiver(socket_server)
-boardReceiver.start()
-
-boardReceiverWD = BoardReceiverWD(socket_server_wd)
-boardReceiverWD.start()
-
-boardSenderWD = BoardSenderWD()
-boardSenderWD.start()
-
-boardCountWD = BoardCountWD()
-boardCountWD.start()
-
-motorsServo = MotorsServo()
-motorsServo.start()
-
-running = True
-
-while running: # главный цикл
-    time.sleep(0.1)
-
-# остановка всех потоков и сервера
-socket_server.close()
-receiver.stop()
-boardReceiverWD.stop()
-motorsServo.stop()
-Motors(0,0)
+'''

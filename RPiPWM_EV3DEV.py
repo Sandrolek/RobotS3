@@ -6,14 +6,7 @@ import threading
 import evdev
 import ev3dev.auto as ev3
 
-class _PwmMode(IntEnum):    # список режимов работы
-    servo90 = 90            # серва 90 градусов
-    servo120 = 120          # серва 120 градусов
-    servo180 = 180          # серва 180 градусов
-    servo270 = 270          # серва 270 градусов
-    forwardMotor = 100      # мотор без реверса
-    reverseMotor = 4        # мотор с реверсом
-    onOff = 5               # вкл/выкл пина
+from config import *
 
 class PwmFreq(IntEnum):     # список возможных частот работы
     H50 = 50                # 50 Гц
@@ -35,7 +28,7 @@ class PwmBase:
         return 1
 
     def getValue(self):
-        return 1
+        return self._value
 
     def setValue(self, value: int):  # устанавливаем значение
         pass
@@ -52,7 +45,22 @@ class Servo120(PwmBase):
 
 class Servo180(PwmBase):
     def __init__(self, channel, freq=PwmFreq.H50, extended=False):
-        pass
+        PwmBase.__init__(self, channel, freq, extended)
+        if self._channel == 9:
+            self.servo1_180 = ev3.LargeMotor(ev3.OUTPUT_C)
+
+    def setMcs(self, value: int):
+        if self._value < value:
+            pos = STEP_1
+        elif self._value > value:
+            pos = -STEP_1
+        else:
+            pos = 0
+
+        self._value = value
+
+        if self._channel == 9:
+            self.servo1_180.run_to_rel_pos(position_sp=pos, speed_sp=200, stop_action='hold')
 
 class Servo270(PwmBase):
     """Класс для управления сервой 270 град"""
@@ -62,15 +70,16 @@ class Servo270(PwmBase):
 class ReverseMotor(PwmBase):
     """Класс для управления мотором с реверсом"""
     def __init__(self, channel, freq=PwmFreq.H50, extended=False):
-        print("Channel=%d" % channel)
-
-        if channel == 12:
+        PwmBase.__init__(self, channel, freq, extended)
+#        print("Channel=%d" % self._channel)
+        if self._channel == 12:
             self.motor = ev3.LargeMotor(ev3.OUTPUT_B)
-        elif channel == 13:
+        elif self._channel == 13:
             self.motor = ev3.LargeMotor(ev3.OUTPUT_A)
         else:
             pass
 
     def setValue(self, value: int):  # устанавливаем значение
         speed = value * -1
+#        print("Channel=%d, SPEED=%d" % (self._channel, speed))
         self.motor.run_direct(duty_cycle_sp=speed)

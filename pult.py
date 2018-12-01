@@ -181,12 +181,21 @@ j.start()
 joy1 = joy.Joyst(j, socket_server)
 joy1.start()
 
-running = True
+_stopping = False
 
-while running: # главный цикл программы
-    time.sleep(0.1)
+while not _stopping:
+    try:
+        time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        print("Ctrl+C pressed")
+        _stopping = True
 
 # остановка всех потоков
-client.close()
-pultReceiverWD.stop()
+socket_server.close()
+socket_server_wd.close()
+
 pultReceiver.stop()
+pultReceiverWD.stop()
+pultSenderWD.stop()
+pultCountWD.stop()
